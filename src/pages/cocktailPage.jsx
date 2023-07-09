@@ -2,14 +2,25 @@ const singleCocktailUrl = 'https://www.thecocktaildb.com/api/json/v1/1/lookup.ph
 import axios from 'axios';
 import {Link, Navigate, useLoaderData} from 'react-router-dom';
 import Wrapper from '../assets/wrappers/CocktailPage';
+import {useQuery} from '@tanstack/react-query';
 
-export const loader =  async ({params}) => {
-    const {id} = params;
-    const response = await axios.get(`${singleCocktailUrl}${id}`)
-    return {data: response.data, id}
+const getSingleCocktail = (id) => {
+    return {
+        queryKey: ['cocktail', id],
+        queryFn: async () => {
+            const { data } = await axios.get(`${singleCocktailUrl}${id}`)
+            return data;
+        }
+    }
+}
+export const loader = (queryClient) => async ({params}) => {
+    const { id } = params;
+    await queryClient.ensureQueryData(getSingleCocktail(id))
+    return {id}
 }
 export const Cocktails = () => {
-    const {id, data} = useLoaderData();
+    const {id} = useLoaderData();
+    const {data} = useQuery(getSingleCocktail(id))
 
     //if(!data) return <h2>Something went wrong...</h2>;
 
@@ -23,7 +34,7 @@ export const Cocktails = () => {
         strGlass: glass,
         strInstructions: instructions
     } = singelDrink;
-    
+
     const validIngredients = Object.keys(singelDrink).filter((key) =>key.startsWith('strIngredient') &&
      singelDrink[key] !== null).map((key) => singelDrink[key])
     console.log(validIngredients)
